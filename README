@@ -1,0 +1,8 @@
+A camera por default tem um formato diferente de imagem saída (V4L2) que o opencv não suporta. Para fazer funcionar deve-se, na hora do cmake, usar a flag -D WITH_LIBV4L=YES.
+
+Para visualizar se a flag está ativada:
+Python3:
+>>> import cv2
+>>> print (cv2.getBuildInformation())
+
+Opencv foi compilado com esta flag apenas para python.
