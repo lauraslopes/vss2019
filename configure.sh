@@ -12,5 +12,5 @@
 
 
 
-v4l2-ctl -d /dev/video0 -c white_balance_red_component=150 -c white_balance_blue_component=140 -c gain=160 -c exposure_absolute=85
+v4l2-ctl -d /dev/video0 -c white_balance_red_component=150 -c white_balance_blue_component=140 -c gain=160 -c exposure_absolute=60
 

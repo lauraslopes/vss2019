@@ -1,14 +1,14 @@
 import cv2
 import numpy as np
 
-video = cv2.VideoCapture("OPENCV.mpeg")
+video = cv2.VideoCapture(0)
 
 _, first_frame = video.read()
 x = 0
 y = 0
 width = 100
 height = 100
-roi = first_frame[y: y+height, x: x+width]
+roi = cv2.imread("bolinha.jpg")
 hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 roi_hist = cv2.calcHist([hsv_roi], [0], None, [180], [0, 180])
 roi_hist = cv2.normalize(roi_hist, roi_hist, 0, 255, cv2.NORM_MINMAX)

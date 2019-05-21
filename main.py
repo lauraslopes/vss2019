@@ -113,11 +113,12 @@ def running():
 
 functionsBasic = [defineXTop, defineXBot, drawing]
 functionsShowing = [initialization, initialization2, running]
-img = cv2.imread("frame2.jpg")
+cap = cv2.VideoCapture(0)
+_, img = cap.read()
 cv2.imshow("JANELA", img)
 cv2.setMouseCallback('JANELA',draw_circle)
 while(1):
-    img = cv2.imread("frame2.jpg")
+    _, img = cap.read()
     functionsShowing[actualShow]()
 
     k = cv2.waitKey(17)
