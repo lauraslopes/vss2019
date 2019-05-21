@@ -1,84 +1,28 @@
-import cv2 as cv
+import cv2
 import numpy as np
-W = 400
-def my_ellipse(img, angle):
-    thickness = 2
-    line_type = 8
-    cv.ellipse(img,
-                (W / 2, W / 2),
-                (W / 4, W / 16),
-                angle,
-                0,
-                360,
-                (255, 0, 0),
-                thickness,
-                line_type)
-def my_filled_circle(img, center):
-    thickness = -1
-    line_type = 8
-    cv.circle(img,
-               center,
-               W / 32,
-               (0, 0, 255),
-               thickness,
-               line_type)
-def my_polygon(img):
-    line_type = 8
-    # Create some points
-    ppt = np.array([[W / 4, 7 * W / 8], [3 * W / 4, 7 * W / 8],
-                    [3 * W / 4, 13 * W / 16], [11 * W / 16, 13 * W / 16],
-                    [19 * W / 32, 3 * W / 8], [3 * W / 4, 3 * W / 8],
-                    [3 * W / 4, W / 8], [26 * W / 40, W / 8],
-                    [26 * W / 40, W / 4], [22 * W / 40, W / 4],
-                    [22 * W / 40, W / 8], [18 * W / 40, W / 8],
-                    [18 * W / 40, W / 4], [14 * W / 40, W / 4],
-                    [14 * W / 40, W / 8], [W / 4, W / 8],
-                    [W / 4, 3 * W / 8], [13 * W / 32, 3 * W / 8],
-                    [5 * W / 16, 13 * W / 16], [W / 4, 13 * W / 16]], np.int32)
-    ppt = ppt.reshape((-1, 1, 2))
-    cv.fillPoly(img, [ppt], (255, 255, 255), line_type)
-    # Only drawind the lines would be:
-    # cv.polylines(img, [ppt], True, (255, 0, 255), line_type)
-def my_line(img, start, end):
-    thickness = 2
-    line_type = 8
-    cv.line(img,
-             start,
-             end,
-             (0, 0, 0),
-             thickness,
-             line_type)
-atom_window = "Drawing 1: Atom"
-rook_window = "Drawing 2: Rook"
-# Create black empty images
-size = W, W, 3
-atom_image = np.zeros(size, dtype=np.uint8)
-rook_image = np.zeros(size, dtype=np.uint8)
-# 1.a. Creating ellipses
-my_ellipse(atom_image, 90)
-my_ellipse(atom_image, 0)
-my_ellipse(atom_image, 45)
-my_ellipse(atom_image, -45)
-# 1.b. Creating circles
-my_filled_circle(atom_image, (W / 2, W / 2))
-# 2. Draw a rook
-# ------------------
-# 2.a. Create a convex polygon
-my_polygon(rook_image)
-cv.rectangle(rook_image,
-              (0, 7 * W / 8),
-              (W, W),
-              (0, 255, 255),
-              -1,
-              8)
-#  2.c. Create a few lines
-my_line(rook_image, (0, 15 * W / 16), (W, 15 * W / 16))
-my_line(rook_image, (W / 4, 7 * W / 8), (W / 4, W))
-my_line(rook_image, (W / 2, 7 * W / 8), (W / 2, W))
-my_line(rook_image, (3 * W / 4, 7 * W / 8), (3 * W / 4, W))
-cv.imshow(atom_window, atom_image)
-cv.moveWindow(atom_window, 0, 200)
-cv.imshow(rook_window, rook_image)
-cv.moveWindow(rook_window, W, 200)
-cv.waitKey(0)
-cv.destroyAllWindows()
+WIDTH = 1360
+HEIGHT = 1040
+ix, iy = 0, 0
+# mouse callback function
+def draw_circle(event,x,y,flags,param):
+    global ix,iy
+    ix = x
+    iy = y
+
+# Create a black image, a window and bind the function to window
+img = cv2.imread("frame2.jpg")
+cv2.namedWindow('image')
+cv2.setMouseCallback('image',draw_circle)
+font = cv2.FONT_HERSHEY_SIMPLEX
+
+while(1):
+    img = cv2.imread("frame2.jpg")
+    cv2.circle(img, (ix, iy), 50, (0, 255, 0), 2)
+    cv2.line(img, (320, 0), (320, 480), (255, 255, 255), 2)
+    cv2.circle(img, (320, 240), 50, (255, 255, 255), 2)
+    cv2.putText(img,str(ix) + ', ' + str(iy),(ix - 38,iy - 5), font, .5, (200,255,155), 1, cv2.LINE_AA)
+    cv2.imshow('image', img)
+    k = cv2.waitKey(17)
+    if k == 27:
+        break
+cv2.destroyAllWindows()
