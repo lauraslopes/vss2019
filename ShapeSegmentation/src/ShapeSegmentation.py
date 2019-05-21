@@ -5,7 +5,8 @@ import numpy as np
 import random as rng
 
 lower = {'red':(166, 84, 141), 'green':(66, 122, 129), 'blue':(97, 100, 117), 'yellow':(23, 59, 119), 'orange':(0, 50, 80)} #assign new item lower['blue'] = (93, 10, 0)
-upper = {'red':(186,255,255), 'green':(86,255,255), 'blue':(117,255,255), 'yellow':(54,255,255), 'orange':(20,255,255)}
+#upper = {'red':(186,255,255), 'green':(86,255,255), 'blue':(117,255,255), 'yellow':(54,255,255), 'orange':(20,255,255)}
+upper = {'orange':(20,255,255)}
 cores = {'red':(0,0,255), 'green':(0,255,0), 'blue':(255,0,0), 'yellow':(0, 255, 217), 'orange':(0,140,255)}
 
 def shapeSegmentation(img):
@@ -85,13 +86,9 @@ def colorClassification(img):
                 cx=int(M['m10']/M['m00'])
                 cy=int(M['m01']/M['m00'])
 
-                if (str(key) == 'blue'):
-                    text = 'robo'
-                elif (str(key) == 'orange'):
-                    text = 'bola'
-                else:
-                    text = 'objeto ' + str(key)
-                cv.putText(img,text,(cx-50,cy),cv.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1)
+          
+                if (str(key) == 'orange'):
+                	cv.putText(img,'bola',(cx-50,cy),cv.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1)
             x,y,w,h = cv.boundingRect(c)
             cv.rectangle(img,(x,y),(x+w,y+h),cores[key],2)
 
@@ -105,7 +102,7 @@ def main():
     
     #################### OU VIDEO
     
-    cap = cv.VideoCapture('video2.mp4')
+    cap = cv.VideoCapture(0)
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
