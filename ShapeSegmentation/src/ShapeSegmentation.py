@@ -16,7 +16,10 @@ def shapeSegmentation(img):
     contours = cv.findContours(thresh.copy(), cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)[-2]
 
     for cnt in contours:
+        ########FAZ CLASSIFICACAO DE COR (LENTO)
         ccc = colorClassification(img, cnt)
+        ########DESLIGA CLASSIFICACAO DE COR
+        #ccc = 'test'
         if (str(ccc) != 'None'):
             area = cv.contourArea(cnt)
             if area < 60000:
@@ -34,7 +37,13 @@ def shapeSegmentation(img):
                     if (M['m00'] != 0.0):
                         cx=int(M['m10']/M['m00'])
                         cy=int(M['m01']/M['m00'])
-                        text = 'objeto ' + str(ccc)
+                        
+                        if (str(ccc) == 'blue'):
+                            text = 'robo'
+                        elif (str(ccc) == 'orange'):
+                            text = 'bola'
+                        else:
+                            text = 'objeto ' + str(ccc)
                         cv.putText(img,text,(cx-50,cy),cv.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1)
                     x,y,w,h = cv.boundingRect(cnt)
                     cv.rectangle(img,(x,y),(x+w,y+h),color,2)
@@ -70,12 +79,15 @@ def colorClassification(img, cnt):
 
 
 def main():
-    img = cv.imread('campo.png')
+    ############# IMAGEM
+    img = cv.imread('campo2.png')
     shapeSegmentation(img)
     cv.imshow('frame', img)
     cv.waitKey(0)
-
-    '''cap = cv.VideoCapture('video.mp4')
+    
+    #################### OU VIDEO
+    
+    '''cap = cv.VideoCapture('video2.mp4')
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -85,8 +97,10 @@ def main():
         cv.imshow('frame', frame)
         if cv.waitKey(25) == ord('q'):
             break
-        
     cap.release()'''
+    
+    ######################
+    
     cv.destroyAllWindows()
     
 if __name__ == '__main__':
