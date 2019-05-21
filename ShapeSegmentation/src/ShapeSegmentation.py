@@ -17,7 +17,7 @@ def shapeSegmentation(img):
 
     for cnt in contours:
         ########FAZ CLASSIFICACAO DE COR (LENTO)
-        ccc = colorClassification(img, cnt)
+        ccc = colorClassificationS(img, cnt)
         ########DESLIGA CLASSIFICACAO DE COR
         #ccc = 'test'
         if (str(ccc) != 'None'):
@@ -48,7 +48,7 @@ def shapeSegmentation(img):
                     x,y,w,h = cv.boundingRect(cnt)
                     cv.rectangle(img,(x,y),(x+w,y+h),color,2)
                 
-def colorClassification(img, cnt):
+def colorClassificationS(img, cnt):
     mask = np.zeros(img.shape[:2], dtype="uint8")
     cv.drawContours(mask, [cnt], -1, 255, -1)
     mask = cv.erode(mask, None, iterations=2)
@@ -67,37 +67,56 @@ def colorClassification(img, cnt):
        
         if len(cnts) > 0:
             return key
-            ''''c = max(cnts, key=cv.contourArea)
+
+def colorClassification(img):
+    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+
+    ret, thresh=cv.threshold(gray,127,255,1)
+    hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV) 
+    for key, value in upper.items():
+        mask = cv.inRange(hsv, lower[key], upper[key])
+
+        cnts = cv.findContours(mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[-2]
+       
+        if len(cnts) > 0:
+            c = max(cnts, key=cv.contourArea)
             M=cv.moments(c)
             if (M['m00'] != 0.0):
                 cx=int(M['m10']/M['m00'])
                 cy=int(M['m01']/M['m00'])
-                text = 'objeto ' + key
+
+                if (str(key) == 'blue'):
+                    text = 'robo'
+                elif (str(key) == 'orange'):
+                    text = 'bola'
+                else:
+                    text = 'objeto ' + str(key)
                 cv.putText(img,text,(cx-50,cy),cv.FONT_HERSHEY_SIMPLEX,1,(255,255,255),1)
             x,y,w,h = cv.boundingRect(c)
-            cv.rectangle(img,(x,y),(x+w,y+h),cores[key],2)'''
-
+            cv.rectangle(img,(x,y),(x+w,y+h),cores[key],2)
 
 def main():
     ############# IMAGEM
-    img = cv.imread('campo2.png')
-    shapeSegmentation(img)
+    '''img = cv.imread('campo2.png')
+    #shapeSegmentation(img)
+    colorClassification(frame)
     cv.imshow('frame', img)
-    cv.waitKey(0)
+    cv.waitKey(0)'''
     
     #################### OU VIDEO
     
-    '''cap = cv.VideoCapture('video2.mp4')
+    cap = cv.VideoCapture('video2.mp4')
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
             break
-        shapeSegmentation(frame)
+        #shapeSegmentation(frame)
+        colorClassification(frame)
         cv.imshow('frame', frame)
         if cv.waitKey(25) == ord('q'):
             break
-    cap.release()'''
+    cap.release()
     
     ######################
     
