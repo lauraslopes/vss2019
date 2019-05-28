@@ -63,7 +63,7 @@ def wait():
 
 
 def startCapture():
-    cap = cv.VideoCapture('bolinha.avi')
+    cap = cv.VideoCapture(0)
     _, Variables.std_frame = cap.read()
     Variables.std_frame = cv.resize(Variables.std_frame, (850, 650))
     cv.imshow("System Vision", Variables.std_frame)
