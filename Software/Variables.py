@@ -1,7 +1,7 @@
 import numpy as np
 
 def Global():
-    # Detecção da bolinha
+    # Deteccaoo da bolinha
     global ball_frame
     ball_frame = np.zeros((850, 650), dtype=int)
     global l_h

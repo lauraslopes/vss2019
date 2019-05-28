@@ -10,7 +10,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import Variables
 import Calibration
 import MainFunctions as Main
-import qwt
 
 
 
