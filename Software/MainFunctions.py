@@ -63,7 +63,7 @@ def wait():
 
 
 def startCapture():
-    cap = cv.VideoCapture('bolinha.avi')
+    cap = cv.VideoCapture('robos.avi')
     _, Variables.std_frame = cap.read()
     Variables.std_frame = cv.resize(Variables.std_frame, (850, 650))
     cv.imshow("System Vision", Variables.std_frame)
@@ -132,7 +132,7 @@ def startCapture():
             functions[Variables.actualFunction]()
             cv.waitKey(10)
         else:
-            cap = cv.VideoCapture('bolinha.avi')
+            cap = cv.VideoCapture('robos.avi')
 
 
 def startMain():
