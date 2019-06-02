@@ -5,7 +5,7 @@ cap = cv2.VideoCapture(0)
 
 # Define the codec and create VideoWriter object
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter('robos.avi',fourcc, 50.0, (640,480))
+out = cv2.VideoWriter('robos.avi',fourcc, 60.0, (1280, 960))
 #out = cv2.VideoWriter('robos.avi', -1, 33.3, (640,480))
 
 while(cap.isOpened()):
