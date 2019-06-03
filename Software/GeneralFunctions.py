@@ -4,7 +4,7 @@ import math
 import Variables
 
 
-# Correcao de perspectiva (funcoes prontas)
+# Correcao de perspectiva (funções prontas)
 def order_points(pts):
     rect = np.zeros((4, 2), dtype="float32")
     s = pts.sum(axis=1)
@@ -35,7 +35,7 @@ def four_point_transform(image, pts):
     return warped
 
 
-# Funcoes gerais
+# Funções gerais
 def rotateAroundCenter(node):
     aux = (int(node[0]*math.cos(np.radians(-Variables.rotation))-node[1]*math.sin((np.radians(-Variables.rotation)))),
            int(node[0]*math.sin(np.radians(-Variables.rotation))+node[1]*math.cos((np.radians(-Variables.rotation)))))

@@ -1,141 +1,241 @@
+from typing import Tuple
+
 import numpy as np
 import cv2 as cv
 import Variables
-import math
 import GeneralFunctions as Functs
 import time
 import copy
-import GUI
+import threading
+from queue import Queue
+import math
 
 term_criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 1)
+last_index = 0
+ball_located = [(0, 0), (0, 0)]
+robots_located = [[False, False, False], [False, False, False]]
+
+#Thread setup
+drawField = threading.Lock()
+
+# Features Matching
+index_params = dict(algorithm=0, trees=5)
+search_params = dict()
+flann = cv.FlannBasedMatcher(index_params, search_params)
+sift = cv.xfeatures2d.SIFT_create()
 
 
-def setPositions():
-    if Variables.topMidLane == (0, 0):
-        if (Variables.ix, Variables.iy) != (0, 0):
-            Variables.topMidLane = (Variables.ix, Variables.iy)
-            Variables.ix, Variables.iy = 0, 0
-    else:
-        if (Variables.ix, Variables.iy) != (0, 0):
-            Variables.botMidLane = (Variables.ix, Variables.iy)
-            Variables.ix, Variables.iy = 0, 0
-            Variables.actualFunction += 1
+class robot:
+    def __init__(self, i):
+        self.position = (0, 0)
+        self.rotation = 0
+        self.image = cv.imread("Robos/robo " + str(i) + ".jpg", cv.IMREAD_GRAYSCALE)
+        print("Robos/robo_" + str(i) + ".jpg")
+        self.kp_image, self.desc_image = sift.detectAndCompute(self.image, None)
+        self.index = i
+
+    def setPos(self, position):
+        self.position = position
+
+    def setRotation(self, rotation):
+        self.rotation = rotation
 
 
-def configureField():
-    Variables.rotation = np.degrees(-(math.atan((Variables.botMidLane[0] - Variables.topMidLane[0]) / (Variables.botMidLane[1] - Variables.topMidLane[1]))))
-    Variables.topMidLane = Functs.rotateAroundCenter(Variables.topMidLane)
-    Variables.botMidLane = Functs.rotateAroundCenter(Variables.botMidLane)
-    Variables.matrixHeight = Variables.botMidLane[1] - Variables.topMidLane[1]
-    Variables.matrixWidth = int((Variables.matrixHeight*170)/130)
-    Variables.matrixOrigin = (Variables.botMidLane[0]-int(Variables.matrixWidth/2), Variables.topMidLane[1])
-    Variables.definedField = True
-    Variables.actualFunction += 1
+robots = (robot(1), robot(2), robot(3))
 
 
-def configurePerspective():
-    if Variables.cornerLT == [0, 0]:
-        if (Variables.ix, Variables.iy) != (0, 0):
-            Variables.cornerLT = [Variables.ix, Variables.iy]
-            Variables.ix, Variables.iy = 0, 0
-            Variables.actualPoint = 1
-    elif Variables.cornerLB == [0, 0]:
-        if (Variables.ix, Variables.iy) != (0, 0):
-            Variables.cornerLB = [Variables.ix, Variables.iy]
-            Variables.ix, Variables.iy = 0, 0
-            Variables.actualPoint = 2
-    elif Variables.cornerRB == [0, 0]:
-        if (Variables.ix, Variables.iy) != (0, 0):
-            Variables.cornerRB = [Variables.ix, Variables.iy]
-            Variables.ix, Variables.iy = 0, 0
-            Variables.actualPoint = 3
-    elif Variables.cornerRT == [0, 0]:
-        if (Variables.ix, Variables.iy) != (0, 0):
-            Variables.cornerRT = [Variables.ix, Variables.iy]
-            Variables.ix, Variables.iy = 0, 0
-            Variables.cornersDefined = True
-            Variables.actualFunction += 1
+class instance:
+    def __init__(self, image, index):
+        image = cv.undistort(image, Variables.mtx, Variables.dist, None, Variables.newcameramtx)
+        image = Functs.rotateImage(image, Variables.rotation)
+        image = cv.resize(image, (850, 650))
+        image = Functs.four_point_transform(image, np.asarray([Variables.cornerLT,
+                                                               Variables.cornerLB,
+                                                               Variables.cornerRT,
+                                                               Variables.cornerRB], dtype=np.float32))
+        image = cv.resize(image, (850, 650))
+        ball_frame = cv.cvtColor(copy.deepcopy(image), cv.COLOR_RGB2HSV)
+        ball_mask = createBallMask(ball_frame)
+        grayframe = cv.cvtColor(image, cv.IMREAD_GRAYSCALE)
 
+        cv.imshow('Ball Mask', ball_mask)
+        q.put((ball_mask, 1, index, None))
+        q.put((grayframe, 2, index, robots[0]))
+        #q.put((grayframe, 2, index, robots[1]))
+        #q.put((grayframe, 2, index, robots[2]))
+        while ball_located[index] == (0, 0):
+            pass
+        while robots_located[index][0] is False:
+            pass
+        #while robots_located[index][1] is False:
+        #    pass
+        #while robots_located[index][2] is False:
+        #    pass
+        ball_location = ball_located[index]
+        robots_located[index] = [False, False, False]
+        ball_located[index] = (0, 0)
+        # Comandos para o robozinho
 
-def wait():
-    a = 0
+        #
+        Variables.lastBallLocation = ball_location
+        drawField(image)
 
 
 
 def startCapture():
-    cap = cv.VideoCapture('robos.avi')
-    _, Variables.std_frame = cap.read()
-    Variables.std_frame = cv.resize(Variables.std_frame, (850, 650))
-    cv.imshow("System Vision", Variables.std_frame)
+    global cap
+    global timer
+    global lastTime
+    cap = cv.VideoCapture(Variables.capSource)
+    global q
+    global t
+    global framesProcessed
+    framesProcessed = 0
+    lastTime = time.time()
+    q = Queue()
+    for x in range(10):
+        t = threading.Thread(target=mainThreader)
+        t.daemon = True
+        t.start()
+    timer = threading.Timer(0.034, clockTimer)
+    timer.start()
+    FPS = threading.Timer(1, calculaFPS)
+    FPS.start()
 
-    cv.setMouseCallback('System Vision', Functs.setMousePosition)
-    while(True):
 
-        status, Variables.std_frame = cap.read()
+def clockTimer():
+    global cap
+    global lastTime
+    global last_index
+    if last_index == 0:
+        index = 1
+        last_index = 1
+    else:
+        index = 0
+        last_index = 0
+    status, image = cap.read()
+    if Variables.stopFlag:
+        time.sleep(1)
+        cv.destroyAllWindows()
+        q.join()
+    elif status:
+        timer = threading.Timer(0.1, clockTimer)
+        timer.start()
+        q.put((image, 0, index, None))
+    else:
+        cap = cv.VideoCapture(Variables.capSource)
+        timer = threading.Timer(0.1, clockTimer)
+        timer.start()
+        q.put((image, 0, index, None))
 
-        if status:
-            h, w = Variables.std_frame.shape[:2]
-            newcameramtx, roi = cv.getOptimalNewCameraMatrix(Variables.mtx, Variables.dist, (w, h), 1, (w, h))
-            Variables.std_frame = cv.undistort(Variables.std_frame, Variables.mtx, Variables.dist, None, newcameramtx)
-            Variables.std_frame = Functs.rotateImage(Variables.std_frame, Variables.rotation)
-            Variables.std_frame = cv.resize(Variables.std_frame, (850, 650))
-            if Variables.cornersDefined:
-                Variables.std_frame = Functs.four_point_transform(Variables.std_frame, np.asarray([Variables.cornerLT,
-                                                                                                   Variables.cornerLB,
-                                                                                                   Variables.cornerRT,
-                                                                                                   Variables.cornerRB], dtype=np.float32))
-                Variables.std_frame = cv.resize(Variables.std_frame, (850, 650))
-                Variables.ball_frame = cv.cvtColor(copy.deepcopy(Variables.std_frame), cv.COLOR_RGB2HSV)
-                lower_color = np.array([Variables.l_h, Variables.l_s, Variables.l_v])
-                upper_color = np.array([Variables.u_h, Variables.u_s, Variables.u_v])
-                mask = cv.inRange(Variables.ball_frame, lower_color, upper_color)
-                cv.imshow('mask', mask)
-                Variables.ballMask = mask
-                cnts = cv.findContours(mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[-2]
-                center = None
-                if len(cnts) > 0:
-                    # find the largest contour in the mask, then use
-                    # it to compute the minimum enclosing circle and
-                    # centroid
-                    c = max(cnts, key=cv.contourArea)
-                    ((x, y), radius) = cv.minEnclosingCircle(c)
-                    M = cv.moments(c)
-                    if M["m10"] != 0 or M["m00"] != 0 or M["m01"] != 0:
-                        center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
 
-                    # only proceed if the radius meets a minimum size
-                    if radius > 5:
-                        Variables.ball_center = (int(x), int(y))
-                        cv.circle(Variables.std_frame, Variables.ball_center, int(radius), (0, 255, 255), 2)
-                # Drawing
-                cv.circle(Variables.std_frame, (425, 325), 100, (255, 255, 255), 3)
-                cv.line(Variables.std_frame, (50, 150), (125, 150), (255, 255, 255), 3)
-                cv.line(Variables.std_frame, (50, 500), (125, 500), (255, 255, 255), 3)
-                cv.line(Variables.std_frame, (125, 150), (125, 500), (255, 255, 255), 3)
-                cv.line(Variables.std_frame, (725, 150), (800, 150), (255, 255, 255), 3)
-                cv.line(Variables.std_frame, (725, 500), (800, 500), (255, 255, 255), 3)
-                cv.line(Variables.std_frame, (725, 500), (725, 150), (255, 255, 255), 3)
-                cv.circle(Variables.std_frame, (237, 125), 10, (255, 255, 255), 3)
-                cv.circle(Variables.std_frame, (237, 325), 10, (255, 255, 255), 3)
-                cv.circle(Variables.std_frame, (237, 525), 10, (255, 255, 255), 3)
-                cv.circle(Variables.std_frame, (613, 125), 10, (255, 255, 255), 3)
-                cv.circle(Variables.std_frame, (613, 325), 10, (255, 255, 255), 3)
-                cv.circle(Variables.std_frame, (613, 525), 10, (255, 255, 255), 3)
-                cv.line(Variables.std_frame, (425, 0), (425, 650), (255, 255, 255), 3)
-            else:
-                if Variables.actualPoint == 2:
-                    cv.line(Variables.std_frame, tuple(Variables.cornerLT), tuple(Variables.cornerLB), (255, 0, 0), 2)
-                elif Variables.actualPoint == 3:
-                    cv.line(Variables.std_frame, tuple(Variables.cornerLT), tuple(Variables.cornerLB), (255, 0, 0), 2)
-                    cv.line(Variables.std_frame, tuple(Variables.cornerLB), tuple(Variables.cornerRB), (255, 0, 0), 2)
-            cv.imshow("System Vision", Variables.std_frame)
-            functions[Variables.actualFunction]()
-            cv.waitKey(10)
+def calculaFPS():
+    global framesProcessed
+    print("FPS = " + str(framesProcessed) + "\n")
+    framesProcessed = 0
+    FPS = threading.Timer(1, calculaFPS)
+    if Variables.stopFlag is False:
+        FPS.start()
+
+
+def findBall(ball_mask, index):
+    global radius
+    global ball_located
+    cnts = cv.findContours(ball_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[-2]
+    center = None
+    if len(cnts) > 0:
+        # find the largest contour in the mask, then use
+        # it to compute the minimum enclosing circle and
+        # centroid
+        c = max(cnts, key=cv.contourArea)
+        ((x, y), radius) = cv.minEnclosingCircle(c)
+        M = cv.moments(c)
+        if M["m10"] != 0 or M["m00"] != 0 or M["m01"] != 0:
+            center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+        # only proceed if the radius meets a minimum size
+        if radius > 5:
+            ball_located[index] = (int(x), int(y))
         else:
-            cap = cv.VideoCapture('robos.avi')
+            ball_located[index] = (1, 1)
+    else:
+        ball_located[index] = (1, 1)
 
 
-def startMain():
-    global functions
-    global views
-    functions = [setPositions, configureField, configurePerspective, wait]
+def drawField(image):
+    cv.circle(image, Variables.lastBallLocation, int(radius), (0, 255, 255), 2)
+    cv.circle(image, (425, 325), 100, (255, 255, 255), 3)
+    cv.line(image, (50, 150), (125, 150), (255, 255, 255), 3)
+    cv.line(image, (50, 500), (125, 500), (255, 255, 255), 3)
+    cv.line(image, (125, 150), (125, 500), (255, 255, 255), 3)
+    cv.line(image, (725, 150), (800, 150), (255, 255, 255), 3)
+    cv.line(image, (725, 500), (800, 500), (255, 255, 255), 3)
+    cv.line(image, (725, 500), (725, 150), (255, 255, 255), 3)
+    cv.circle(image, (237, 125), 10, (255, 255, 255), 3)
+    cv.circle(image, (237, 325), 10, (255, 255, 255), 3)
+    cv.circle(image, (237, 525), 10, (255, 255, 255), 3)
+    cv.circle(image, (613, 125), 10, (255, 255, 255), 3)
+    cv.circle(image, (613, 325), 10, (255, 255, 255), 3)
+    cv.circle(image, (613, 525), 10, (255, 255, 255), 3)
+    cv.line(image, (425, 0), (425, 650), (255, 255, 255), 3)
+    cv.imshow("System Vision", image)
+    global framesProcessed
+    framesProcessed += 1
+
+
+def createBallMask(ball_frame):
+    lower_color = np.array([Variables.l_h, Variables.l_s, Variables.l_v])
+    upper_color = np.array([Variables.u_h, Variables.u_s, Variables.u_v])
+    return cv.inRange(ball_frame, lower_color, upper_color)
+
+
+def findRobot(grayframe, index, robot):
+    start_time = time.time()
+    kp_grayframe, desc_grayframe = sift.detectAndCompute(grayframe, None)
+    matches = flann.knnMatch(robot.desc_image, desc_grayframe, k=2)
+    good_points = []
+    for m, n in matches:
+        if m.distance < 0.8 * n.distance:
+            good_points.append(m)
+    if len(good_points) > 10:
+        query_pts = np.float32([robot.kp_image[m.queryIdx].pt for m in good_points]).reshape(-1, 1, 2)
+        train_pts = np.float32([kp_grayframe[m.trainIdx].pt for m in good_points]).reshape(-1, 1, 2)
+        matrix, mask = cv.findHomography(query_pts, train_pts, cv.RANSAC, 5.0)
+        matches_mask = mask.ravel().tolist()
+        # Perspective transform
+        h, w = robot.image.shape
+        pts = np.float32([[0, 0], [0, h], [w, h], [w, 0]]).reshape(-1, 1, 2)
+        dst = cv.perspectiveTransform(pts, matrix)
+        midLeft = (int((dst[0][0][0] + dst[1][0][0]) / 2), int((dst[0][0][1] + dst[1][0][1]) / 2))
+        midRight = (int((dst[2][0][0] + dst[3][0][0]) / 2), int((dst[2][0][1] + dst[3][0][1]) / 2))
+        robot.position = (int((midLeft[0] + midRight[0]) / 2), int((midLeft[1] + midRight[1]) / 2))
+        x1 = 100
+        x2 = midRight[0] - robot.position[0]
+        y1 = 0
+        y2 = midRight[1] - robot.position[1]
+        cos = (x1 * x2 + y1 * y2)
+        bot = math.sqrt(math.pow(x1, 2) + math.pow(y1, 2)) * math.sqrt(math.pow(x2, 2) + math.pow(y2, 2))
+        cos = cos / bot
+        angle = np.degrees(math.acos(cos))
+        if midRight[1] < robot.position[1]:
+            angle *= -1
+    global robots_located
+    if robot.index == 1:
+        robots_located[index] = [True, robots_located[index][1], robots_located[index][2]]
+    elif robot.index == 2:
+        robots_located[index] = [robots_located[index][0], True, robots_located[index][2]]
+    else:
+        robots_located[index] = [robots_located[index][0], robots_located[index][1], True]
+    print("TEMPO LEVADO: " + str(time.time() - start_time))
+
+
+
+def mainThreader():
+    while True:
+        (image, op, index, robot) = q.get()
+        if op == 0:
+            instance(image, index)
+        elif op == 1:
+            findBall(image, index)
+        elif op == 2:
+            findRobot(image, index, robot)
+        q.task_done()
