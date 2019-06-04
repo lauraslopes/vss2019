@@ -1,9 +1,15 @@
 import numpy as np
 
+
+def setFrame(actualTurn, dest, source):
+    if actualTurn == 0:
+        dest = (source, dest[1])
+    else:
+        dest = (dest[0], source)
+
+
 def Global():
-    # Deteccaoo da bolinha
-    global ball_frame
-    ball_frame = np.zeros((850, 650), dtype=int)
+    # Detecção da bolinha
     global l_h
     l_h = 0
     global l_s
@@ -16,15 +22,10 @@ def Global():
     u_s = 255
     global u_v
     u_v = 255
-    global ball_center
-    ball_center = (0, 0)
-    global ballMask
-    ballMask = np.zeros((850, 650), dtype=int)
-
-    # Base Frame
-    global std_frame
-    std_frame = np.zeros((850, 650), dtype=int)
-
+    global lastBallLocation
+    lastBallLocation = (0, 0)
+    global proportion
+    proportion = 7.5
     # Camera Calibration
     global cornerLT
     cornerLT = [0, 0]
@@ -64,3 +65,7 @@ def Global():
     global ui
     global actualImage
     actualImage = 0
+    global stopFlag
+    stopFlag = True
+    global capSource
+    capSource = "bolinha.avi"
