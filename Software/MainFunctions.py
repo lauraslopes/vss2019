@@ -61,17 +61,17 @@ class instance:
 
         cv.imshow('Ball Mask', ball_mask)
         q.put((ball_mask, 1, index, None))
-        q.put((grayframe, 2, index, robots[0]))
-        q.put((grayframe, 2, index, robots[1]))
-        q.put((grayframe, 2, index, robots[2]))
+        #q.put((grayframe, 2, index, robots[0]))
+        #q.put((grayframe, 2, index, robots[1]))
+        #q.put((grayframe, 2, index, robots[2]))
         while ball_located[index] == (0, 0):
             pass
-        while robots_located[index][0] is False:
-            pass
-        while robots_located[index][1] is False:
-            pass
-        while robots_located[index][2] is False:
-            pass
+        #while robots_located[index][0] is False:
+        #    pass
+        #while robots_located[index][1] is False:
+        #    pass
+        #while robots_located[index][2] is False:
+        #    pass
         ball_location = ball_located[index]
         robots_located[index] = [False, False, False]
         ball_located[index] = (0, 0)
