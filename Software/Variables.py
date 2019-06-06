@@ -68,4 +68,4 @@ def Global():
     global stopFlag
     stopFlag = True
     global capSource
-    capSource = "bolinha.avi"
+    capSource = "robos.avi"

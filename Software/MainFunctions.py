@@ -61,13 +61,13 @@ class instance:
 
         cv.imshow('Ball Mask', ball_mask)
         q.put((ball_mask, 1, index, None))
-        #q.put((grayframe, 2, index, robots[0]))
+        q.put((grayframe, 2, index, robots[0]))
         #q.put((grayframe, 2, index, robots[1]))
         #q.put((grayframe, 2, index, robots[2]))
         while ball_located[index] == (0, 0):
             pass
-        #while robots_located[index][0] is False:
-        #    pass
+        while robots_located[index][0] is False:
+            pass
         #while robots_located[index][1] is False:
         #    pass
         #while robots_located[index][2] is False:
@@ -99,7 +99,7 @@ def startCapture():
         t = threading.Thread(target=mainThreader)
         t.daemon = True
         t.start()
-    timer = threading.Timer(0.1, clockTimer)
+    timer = threading.Timer(0.04, clockTimer)
     timer.start()
     FPS = threading.Timer(1, calculaFPS)
     FPS.start()
@@ -121,12 +121,12 @@ def clockTimer():
         cv.destroyAllWindows()
         q.join()
     elif status:
-        timer = threading.Timer(0.3, clockTimer)
+        timer = threading.Timer(1, clockTimer)
         timer.start()
         q.put((image, 0, index, None))
     else:
         cap = cv.VideoCapture(Variables.capSource)
-        timer = threading.Timer(0.3, clockTimer)
+        timer = threading.Timer(1, clockTimer)
         timer.start()
         q.put((image, 0, index, None))
 
