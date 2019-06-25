@@ -69,3 +69,5 @@ def Global():
     stopFlag = True
     global capSource
     capSource = "robos.avi"
+    global enemiesPosition
+    enemiesPosition = ({"x":0,"y":0}, {"x":0,"y":0}, {"x":0,"y":0})
